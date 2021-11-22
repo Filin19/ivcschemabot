@@ -1,17 +1,20 @@
 package com.railwai.ivc.ivcschemabot.bot;
 
-import com.railwai.ivc.ivcschemabot.services.SendMessageService;
+import com.railwai.ivc.ivcschemabot.handler.CallbackQueryHandler;
+import com.railwai.ivc.ivcschemabot.handler.MessageHandler;
+import com.railwai.ivc.ivcschemabot.updateprocessor.UpdateProcessorImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 public class IvcBot extends TelegramLongPollingBot {
 
-    private SendMessageService sendMessageService;
+    private UpdateProcessorImpl updateProcessor;
 
     @Value("${telegram.bot.username}")
     private String username;
@@ -20,8 +23,8 @@ public class IvcBot extends TelegramLongPollingBot {
     private String token;
 
     @Autowired
-    public void setSendMessageService(SendMessageService sendMessageService) {
-        this.sendMessageService = sendMessageService;
+    public void setUpdateProcessor(UpdateProcessorImpl updateProcessor) {
+        this.updateProcessor = updateProcessor;
     }
 
     @Override
@@ -38,12 +41,11 @@ public class IvcBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if(update.hasMessage()) {
             Message message = update.getMessage();
-            if(message.hasText()) {
-                sendMessageService.checkUser(message);
-            } else if(message.hasContact()) {
-                sendMessageService.sendAuthorizationMessage(message);
-                System.out.println(message.getContact());
-            }
+            updateProcessor.executeMessage(message);
+        }
+        if(update.hasCallbackQuery()) {
+            CallbackQuery callbackQuery = update.getCallbackQuery();
+            updateProcessor.executeCallBackQuery(callbackQuery);
         }
     }
 }

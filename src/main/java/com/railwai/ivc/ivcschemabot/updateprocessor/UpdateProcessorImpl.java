@@ -21,11 +21,11 @@ public class UpdateProcessorImpl implements UpdateProcessor {
 
     @Override
     public void executeMessage(Message message) {
-        messageHandler.choseAction(message);
+        messageHandler.distributeMessage(message);
     }
 
     @Override
     public void executeCallBackQuery(CallbackQuery callbackQuery) {
-        callbackQueryHandler.choseAction(callbackQuery);
+        callbackQueryHandler.distributeMessage(callbackQuery);
     }
 }

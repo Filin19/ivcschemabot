@@ -7,7 +7,7 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 public class CallbackQueryHandler implements Handler<CallbackQuery> {
 
     @Override
-    public void choseAction(CallbackQuery callbackQuery) {
+    public void distributeMessage(CallbackQuery callbackQuery) {
 
     }
 }
