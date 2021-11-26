@@ -1,5 +1,6 @@
 package com.railwai.ivc.ivcschemabot.services;
 
+import com.railwai.ivc.ivcschemabot.cache.MessageCache;
 import com.railwai.ivc.ivcschemabot.reader.FileReader;
 import com.railwai.ivc.ivcschemabot.sender.MessageSender;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,34 +25,37 @@ import java.util.Map;
 public class SendMessageService {
 
     private static final String START_FOLDER = "./Схемы";
-    private final Map<Long, String> messageCache;
+    private final MessageCache messageCache;
 
     private final MessageSender messageSender;
     private final FileReader fileReader;
 
     @Autowired
-    public SendMessageService(MessageSender messageSender, FileReader fileReader) {
+    public SendMessageService(MessageSender messageSender,
+                              FileReader fileReader, MessageCache messageCache) {
         this.fileReader = fileReader;
         this.messageSender = messageSender;
-        messageCache = new HashMap<>();
+        this.messageCache = messageCache;
     }
 
     public void checkUser(Message message) {
-        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> keyboardRows = new ArrayList<>();
-        KeyboardRow kr = new KeyboardRow();
-        kr.add(KeyboardButton.builder()
-                .text("Відправити дані")
-                .requestContact(true).build());
-        keyboardRows.add(kr);
-        markup.setKeyboard(keyboardRows);
-        markup.setResizeKeyboard(true);
-        markup.setOneTimeKeyboard(true);
-        SendMessage sm = new SendMessage();
-        sm.setText("Для того щоб почати роботу, відправте будь ласка ваші дані, для перевірки доступу");
-        sm.setChatId(String.valueOf(message.getChatId()));
-        sm.setReplyMarkup(markup);
-        messageSender.sendMessage(sm);
+        if(!messageCache.checkIfExist(message.getChatId())) {
+            ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
+            List<KeyboardRow> keyboardRows = new ArrayList<>();
+            KeyboardRow kr = new KeyboardRow();
+            kr.add(KeyboardButton.builder()
+                    .text("Відправити дані")
+                    .requestContact(true).build());
+            keyboardRows.add(kr);
+            markup.setKeyboard(keyboardRows);
+            markup.setResizeKeyboard(true);
+            markup.setOneTimeKeyboard(true);
+            SendMessage sm = new SendMessage();
+            sm.setText("Для того щоб почати роботу, відправте будь ласка ваші дані, для перевірки доступу");
+            sm.setChatId(String.valueOf(message.getChatId()));
+            sm.setReplyMarkup(markup);
+            messageSender.sendMessage(sm);
+        }
     }
 
     public void notAuthorized(Message message) {
@@ -64,7 +68,7 @@ public class SendMessageService {
     }
 
     public void sendStartKeyboard(Message message) {
-        messageCache.put(message.getChatId(), START_FOLDER);
+        messageCache.addNewUserToCache(message.getChatId(), START_FOLDER);
         List<File> folderIneer = fileReader.getFileList(START_FOLDER);
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
@@ -98,9 +102,8 @@ public class SendMessageService {
     }
 
     public void directionNavigate(Message message, String fileName) {
-        messageCache.put(message.getChatId(), messageCache.get(message.getChatId()) + fileName);
-
-        String path = messageCache.get(message.getChatId());
+        messageCache.addToExistingCache(message.getChatId(), fileName);
+        String path = messageCache.getFromCache(message.getChatId());
         List<File> folders = fileReader.getFileList(path);
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
@@ -120,10 +123,10 @@ public class SendMessageService {
     }
 
     public void sendSchema(Message message, String fileName) {
-        messageCache.put(message.getChatId(), messageCache.get(message.getChatId()) + fileName);
+        messageCache.addToExistingCache(message.getChatId(), fileName);
         SendPhoto sp = new SendPhoto();
         sp.setChatId(String.valueOf(message.getChatId()));
-        sp.setPhoto(new InputFile(new File(messageCache.get(message.getChatId()))));
+        sp.setPhoto(new InputFile(new File(messageCache.getFromCache(message.getChatId()))));
         messageSender.sendSchema(sp);
         sendBackButton(message);
     }

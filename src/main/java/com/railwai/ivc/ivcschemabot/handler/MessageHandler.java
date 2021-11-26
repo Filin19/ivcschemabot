@@ -1,5 +1,6 @@
 package com.railwai.ivc.ivcschemabot.handler;
 
+import com.railwai.ivc.ivcschemabot.cache.MessageCache;
 import com.railwai.ivc.ivcschemabot.services.SendMessageService;
 import com.railwai.ivc.ivcschemabot.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ public class MessageHandler implements Handler<Message> {
     @Override
     public void distributeMessage(Message message) {
         if(message.hasText()) {
+            System.out.println(message.getFrom().getFirstName());
             sendMessageService.checkUser(message);
             System.out.println(message.getChatId());
         }
