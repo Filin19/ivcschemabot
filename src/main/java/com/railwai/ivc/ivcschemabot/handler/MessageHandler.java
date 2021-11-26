@@ -22,10 +22,10 @@ public class MessageHandler implements Handler<Message> {
     public void distributeMessage(Message message) {
         if(message.hasText()) {
             sendMessageService.checkUser(message);
+            System.out.println(message.getChatId());
         }
         if(message.hasContact()) {
             if(userService.checkUser(message.getContact())) {
-                sendMessageService.sendAuthorizationMessage(message);
                 sendMessageService.sendStartKeyboard(message);
             } else {
                 sendMessageService.notAuthorized(message);

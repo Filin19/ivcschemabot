@@ -5,5 +5,5 @@ import java.util.List;
 
 public interface FileReader {
 
-    List<File> readFiles(File path);
+    List<File> getFileList(String path);
 }

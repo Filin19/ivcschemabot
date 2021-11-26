@@ -1,26 +1,39 @@
 package com.railwai.ivc.ivcschemabot.services;
 
+import com.railwai.ivc.ivcschemabot.reader.FileReader;
 import com.railwai.ivc.ivcschemabot.sender.MessageSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class SendMessageService {
 
+    private static final String START_FOLDER = "./Схемы";
+    private final Map<Long, String> messageCache;
+
     private final MessageSender messageSender;
+    private final FileReader fileReader;
 
     @Autowired
-    public SendMessageService(MessageSender messageSender) {
+    public SendMessageService(MessageSender messageSender, FileReader fileReader) {
+        this.fileReader = fileReader;
         this.messageSender = messageSender;
+        messageCache = new HashMap<>();
     }
 
     public void checkUser(Message message) {
@@ -28,65 +41,117 @@ public class SendMessageService {
         List<KeyboardRow> keyboardRows = new ArrayList<>();
         KeyboardRow kr = new KeyboardRow();
         kr.add(KeyboardButton.builder()
-                .text("Send contact data")
+                .text("Відправити дані")
                 .requestContact(true).build());
         keyboardRows.add(kr);
         markup.setKeyboard(keyboardRows);
         markup.setResizeKeyboard(true);
         markup.setOneTimeKeyboard(true);
         SendMessage sm = new SendMessage();
-        sm.setText("Войти могут только зарегестрированные пользователи." +
-                " Отправьте, пожалуйста, свои контактные данные, для проверки регистрации");
+        sm.setText("Для того щоб почати роботу, відправте будь ласка ваші дані, для перевірки доступу");
         sm.setChatId(String.valueOf(message.getChatId()));
         sm.setReplyMarkup(markup);
         messageSender.sendMessage(sm);
     }
 
-    public void sendAuthorizationMessage(Message message) {
-        SendMessage sm = SendMessage.builder()
-                .text("Авторизация успешна. Приветсвую " + message.getContact().getFirstName()
-                + ". Выберите станцию или предприятие, для поиска схемы.")
-                .chatId(String.valueOf(message.getChatId()))
-                .build();
-        messageSender.sendMessage(sm);
-    }
-
     public void notAuthorized(Message message) {
         SendMessage sm = SendMessage.builder()
-                .text("Вы не авторизированы. За подробностями, пожалуйста, обратитесь к администратору")
+                .text("Ви не маєте доступу до інформації." +
+                        " Зверніться до адміністратора за додатковими відомостями.")
                 .chatId(String.valueOf(message.getChatId()))
                 .build();
         messageSender.sendMessage(sm);
     }
 
     public void sendStartKeyboard(Message message) {
-        File startFolder = new File("./Схемы");
-        File[] folderIneer = startFolder.listFiles();
+        messageCache.put(message.getChatId(), START_FOLDER);
+        List<File> folderIneer = fileReader.getFileList(START_FOLDER);
 
-        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> keyboardRows = new ArrayList<>();
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboardRows = generateButtonForKeyboard(folderIneer);
+
+        markup.setKeyboard(keyboardRows);
+        sendKeyboard(markup, message);
+    }
+
+    private List<List<InlineKeyboardButton>> generateButtonForKeyboard(List<File> folderInner) {
+        List<List<InlineKeyboardButton>> keyboardRows = new ArrayList<>();
 
         int count = 1;
-        KeyboardRow row = new KeyboardRow();
-        for (File file : folderIneer) {
-            row.add(KeyboardButton.builder().text(file.getName()).build());
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        for (File file : folderInner) {
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText(file.getName());
+            button.setCallbackData("/" + file.getName());
+            row.add(button);
             if (count == 3) {
                 count = 0;
                 keyboardRows.add(row);
-                row = new KeyboardRow();
+                row = new ArrayList<>();
             }
             count++;
         }
         if(!row.isEmpty()) {
             keyboardRows.add(row);
         }
+        return keyboardRows;
+    }
+
+    public void directionNavigate(Message message, String fileName) {
+        messageCache.put(message.getChatId(), messageCache.get(message.getChatId()) + fileName);
+
+        String path = messageCache.get(message.getChatId());
+        List<File> folders = fileReader.getFileList(path);
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboardRows = generateButtonForKeyboard(folders);
+        keyboardRows.add(createBackButton());
+
         markup.setKeyboard(keyboardRows);
-        markup.setResizeKeyboard(true);
-        markup.setOneTimeKeyboard(true);
+        sendKeyboard(markup, message);
+    }
+
+    public void wrongMessage(Message message) {
+        SendMessage sm = SendMessage.builder()
+                .text("Щось пішлол не так. Спробуйте знову")
+                .chatId(String.valueOf(message.getChatId()))
+                .build();
+        messageSender.sendMessage(sm);
+    }
+
+    public void sendSchema(Message message, String fileName) {
+        messageCache.put(message.getChatId(), messageCache.get(message.getChatId()) + fileName);
+        SendPhoto sp = new SendPhoto();
+        sp.setChatId(String.valueOf(message.getChatId()));
+        sp.setPhoto(new InputFile(new File(messageCache.get(message.getChatId()))));
+        messageSender.sendSchema(sp);
+        sendBackButton(message);
+    }
+
+    private void sendKeyboard(InlineKeyboardMarkup markup, Message message) {
         SendMessage sm = new SendMessage();
-        sm.setText("Список");
+        sm.setText("_____________________________");
         sm.setReplyMarkup(markup);
         sm.setChatId(String.valueOf(message.getChatId()));
         messageSender.sendMessage(sm);
+    }
+
+    private List<InlineKeyboardButton> createBackButton() {
+        List<InlineKeyboardButton> row = new ArrayList<>();
+
+        InlineKeyboardButton button = new InlineKeyboardButton();
+        button.setText("повернутись до списку станцій");
+        button.setCallbackData("/return");
+        row.add(button);
+
+        return row;
+    }
+
+    private void sendBackButton(Message message) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboardRows = new ArrayList<>();
+        keyboardRows.add(createBackButton());
+        markup.setKeyboard(keyboardRows);
+        sendKeyboard(markup, message);
     }
 }
