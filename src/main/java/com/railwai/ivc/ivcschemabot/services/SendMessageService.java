@@ -17,10 +17,13 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Class Service for sending message to user.
+ * <p>
+ * @author Viktor Zaitsev.
+ */
 @Service
 public class SendMessageService {
 
@@ -38,6 +41,11 @@ public class SendMessageService {
         this.messageCache = messageCache;
     }
 
+    /**
+     * Method for send user a message to enter his authorization data.
+     * <p>
+     * @param message Message object.
+     */
     public void checkUser(Message message) {
         if(!messageCache.checkIfExist(message.getChatId())) {
             ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
@@ -102,16 +110,16 @@ public class SendMessageService {
     }
 
     public void directionNavigate(Message message, String fileName) {
-        messageCache.addToExistingCache(message.getChatId(), fileName);
-        String path = messageCache.getFromCache(message.getChatId());
-        List<File> folders = fileReader.getFileList(path);
+            messageCache.addToExistingCache(message.getChatId(), fileName);
+            String path = messageCache.getFromCache(message.getChatId());
+            List<File> folders = fileReader.getFileList(path);
 
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> keyboardRows = generateButtonForKeyboard(folders);
-        keyboardRows.add(createBackButton());
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            List<List<InlineKeyboardButton>> keyboardRows = generateButtonForKeyboard(folders);
+            keyboardRows.add(createBackButton());
 
-        markup.setKeyboard(keyboardRows);
-        sendKeyboard(markup, message);
+            markup.setKeyboard(keyboardRows);
+            sendKeyboard(markup, message);
     }
 
     public void wrongMessage(Message message) {
