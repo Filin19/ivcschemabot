@@ -27,8 +27,8 @@ public class CacheCleaner {
     /**
      * Method to clean cache every day at midnight
      */
-    //@Scheduled(cron = "0 00 00 * * *")
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(cron = "0 00 00 * * *")
+   // @Scheduled(fixedRate = 10000)
     public void clearCacheInMidnight() {
         System.out.println("cache cleaned");
         messageCache.clearCache();

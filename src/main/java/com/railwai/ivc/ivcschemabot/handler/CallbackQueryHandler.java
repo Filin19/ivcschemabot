@@ -29,23 +29,49 @@ public class CallbackQueryHandler implements Handler<CallbackQuery> {
      */
     @Override
     public void distributeMessage(CallbackQuery callbackQuery) {
-        if(messageCache.checkIfExist(callbackQuery.getMessage().getChatId())) {
+        if(isUserInCache(callbackQuery)) {
             System.out.println(callbackQuery.getData());   // delete when program was ready
-            if (callbackQuery.getData().equals("/return")) {
-                sendMessageService.sendStartKeyboard(callbackQuery.getMessage());
-            } else if (callbackQuery.getData().charAt(0) == '/') {
-                if (callbackQuery.getData().endsWith(".jpg")) {
-                    sendMessageService.sendSchema(callbackQuery.getMessage(),
-                            callbackQuery.getData());
-                } else {
-                    sendMessageService.directionNavigate(callbackQuery.getMessage(),
-                            callbackQuery.getData());
-                }
-            } else {
-                sendMessageService.wrongMessage(callbackQuery.getMessage());
-            }
+            checkData(callbackQuery);
         } else {
             sendMessageService.checkUser(callbackQuery.getMessage());
+        }
+    }
+
+    /**
+     * Method check is cache has this user.
+     * @param callbackQuery
+     * @return
+     */
+    private boolean isUserInCache(CallbackQuery callbackQuery) {
+        return messageCache.checkIfExist(callbackQuery.getMessage().getChatId());
+    }
+
+    /**
+     * Method processing callbackQuery data.
+     * @param callbackQuery
+     */
+    private void checkData(CallbackQuery callbackQuery) {
+        if (callbackQuery.getData().equals("/return")) {
+            sendMessageService.sendStartKeyboard(callbackQuery.getMessage());
+        } else if (callbackQuery.getData().charAt(0) == '/') {
+            answerReturn(callbackQuery);
+        } else {
+            sendMessageService.wrongMessage(callbackQuery.getMessage());
+        }
+    }
+
+    /**
+     * Method check is data was address of folder or picture. And return to user
+     * new keyboard or picture.
+     * @param callbackQuery
+     */
+    private void answerReturn(CallbackQuery callbackQuery) {
+        if (callbackQuery.getData().endsWith(".jpg")) {
+            sendMessageService.sendSchema(callbackQuery.getMessage(),
+                    callbackQuery.getData());
+        } else {
+            sendMessageService.directionNavigate(callbackQuery.getMessage(),
+                    callbackQuery.getData());
         }
     }
 }
