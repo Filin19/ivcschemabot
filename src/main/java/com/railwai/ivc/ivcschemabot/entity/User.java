@@ -5,6 +5,11 @@ import org.hibernate.annotations.GeneratorType;
 import javax.persistence.*;
 import java.util.Objects;
 
+/**
+ * Class entity to save user in database.
+ * <p>
+ * @author Viktor Zaitsev.
+ */
 @Entity
 @Table(name = "users")
 public class User {

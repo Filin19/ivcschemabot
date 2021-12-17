@@ -18,6 +18,7 @@ public class CacheCleaner {
 
     /**
      * Constructor for class CacheCleaner.
+     * <p>
      * @param messageCache MessageCache object.
      */
     public CacheCleaner(MessageCache messageCache) {
@@ -28,7 +29,6 @@ public class CacheCleaner {
      * Method to clean cache every day at midnight
      */
     @Scheduled(cron = "0 00 00 * * *")
-   // @Scheduled(fixedRate = 10000)
     public void clearCacheInMidnight() {
         System.out.println("cache cleaned");
         messageCache.clearCache();

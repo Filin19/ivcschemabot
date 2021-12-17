@@ -27,12 +27,33 @@ import java.util.List;
 @Service
 public class SendMessageService {
 
+    /**
+     * Constant to save entry point to folder three.
+     */
     private static final String START_FOLDER = "./Схемы";
+
+    /**
+     * Variable to save MessageCache object.
+     */
     private final MessageCache messageCache;
 
+    /**
+     * Variable to save MessageSender object.
+     */
     private final MessageSender messageSender;
+
+    /**
+     * Variable to save FileReader object.
+     */
     private final FileReader fileReader;
 
+    /**
+     * Constructor for class SendMessageService.
+     * <p>
+     * @param messageSender MessageSender object.
+     * @param fileReader FileReader object.
+     * @param messageCache MessageCache object.
+     */
     @Autowired
     public SendMessageService(MessageSender messageSender,
                               FileReader fileReader, MessageCache messageCache) {
@@ -66,6 +87,11 @@ public class SendMessageService {
         }
     }
 
+    /**
+     * Method send message to user if he is not authorized.
+     * <p>
+     * @param message Message object.
+     */
     public void notAuthorized(Message message) {
         SendMessage sm = SendMessage.builder()
                 .text("Ви не маєте доступу до інформації." +
@@ -75,6 +101,11 @@ public class SendMessageService {
         messageSender.sendMessage(sm);
     }
 
+    /**
+     * Method sends to user start keyboard to chose station.
+     * <p>
+     * @param message Message object.
+     */
     public void sendStartKeyboard(Message message) {
         messageCache.addNewUserToCache(message.getChatId(), START_FOLDER);
         List<File> folderIneer = fileReader.getFileList(START_FOLDER);
@@ -86,6 +117,12 @@ public class SendMessageService {
         sendKeyboard(markup, message);
     }
 
+    /**
+     * Method generate button from keyboard using List of file from argument.
+     * <p>
+     * @param folderInner List of file.
+     * @return Keyboard with button are repeating file names.
+     */
     private List<List<InlineKeyboardButton>> generateButtonForKeyboard(List<File> folderInner) {
         List<List<InlineKeyboardButton>> keyboardRows = new ArrayList<>();
 
@@ -109,7 +146,13 @@ public class SendMessageService {
         return keyboardRows;
     }
 
-    public void directionNavigate(Message message, String fileName) {
+    /**
+     * Method relocate user to the next folder in three.
+     * <p>
+     * @param message Message object.
+     * @param fileName fileName where user was relocated.
+     */
+    public void changeFolder(Message message, String fileName) {
             messageCache.addToExistingCache(message.getChatId(), fileName);
             String path = messageCache.getFromCache(message.getChatId());
             List<File> folders = fileReader.getFileList(path);
@@ -122,6 +165,11 @@ public class SendMessageService {
             sendKeyboard(markup, message);
     }
 
+    /**
+     * Method sends to user error message.
+     * <p>
+     * @param message Message object.
+     */
     public void wrongMessage(Message message) {
         SendMessage sm = SendMessage.builder()
                 .text("Щось пішлол не так. Спробуйте знову")
@@ -130,6 +178,12 @@ public class SendMessageService {
         messageSender.sendMessage(sm);
     }
 
+    /**
+     * Method to send picture of the schema to user.
+     * <p>
+     * @param message Message object.
+     * @param fileName fileName object.
+     */
     public void sendSchema(Message message, String fileName) {
         messageCache.addToExistingCache(message.getChatId(), fileName);
         SendPhoto sp = new SendPhoto();
@@ -139,6 +193,12 @@ public class SendMessageService {
         sendBackButton(message);
     }
 
+    /**
+     * Method to send keyboard to user.
+     * <p>
+     * @param markup InlineKeyboardMarkup object.
+     * @param message Message object.
+     */
     private void sendKeyboard(InlineKeyboardMarkup markup, Message message) {
         SendMessage sm = new SendMessage();
         sm.setText("_____________________________");
@@ -147,6 +207,11 @@ public class SendMessageService {
         messageSender.sendMessage(sm);
     }
 
+    /**
+     * Method to create button for redirection user to start keyboard.
+     * <p>
+     * @return button with redirection.
+     */
     private List<InlineKeyboardButton> createBackButton() {
         List<InlineKeyboardButton> row = new ArrayList<>();
 
@@ -158,6 +223,11 @@ public class SendMessageService {
         return row;
     }
 
+    /**
+     * Method to send user button for redirection on start keyboard.
+     * <p>
+     * @param message Message object.
+     */
     private void sendBackButton(Message message) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboardRows = new ArrayList<>();
