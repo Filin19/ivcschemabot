@@ -1,0 +1,68 @@
+package com.railway.ivc.ivcschemabot.sender;
+
+import com.railway.ivc.ivcschemabot.bot.IvcBot;
+import com.railway.ivc.ivcschemabot.handler.MessageHandler;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+/**
+ * Class to send message to user.
+ * <p>
+ * @author Viktor Zaitsev.
+ */
+@Service
+public class MessageSenderImpl implements MessageSender {
+
+    /**
+     * Initial Logger Log4j for class MessageSenderImpl.
+     */
+    private static final Logger LOG = LogManager.getLogger(MessageSenderImpl.class);
+
+    /**
+     * Variable to save IvcBot object.
+     */
+    private IvcBot bot;
+
+    /**
+     * Setter to IvcBot field.
+     * <p>
+     * @param bot IvcBot object.
+     */
+    @Autowired
+    public void setBot(IvcBot bot) {
+        this.bot = bot;
+    }
+
+    /**
+     * Method to send message to user.
+     * <p>
+     * @param sendMessage SendMessage object.
+     */
+    @Override
+    public void sendMessage(SendMessage sendMessage) {
+        try {
+            bot.execute(sendMessage);
+        } catch (TelegramApiException e) {
+            LOG.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Method to send picture of schema to user.
+     * <p>
+     * @param sendPhoto SendPhoto object.
+     */
+    @Override
+    public void sendSchema(SendPhoto sendPhoto) {
+        try {
+            bot.execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            LOG.error(e.getMessage());
+        }
+    }
+}
